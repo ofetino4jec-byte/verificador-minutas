@@ -1,5 +1,9 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>
 <title>Verificador de Citações</title>
-<meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Schibsted+Grotesk:wght@400;500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap">
 <style>
 /* Layout: entrada e fontes no topo; resultado da auditoria; texto da minuta à esquerda e itens à direita; saídas ao final. */
@@ -199,6 +203,8 @@ button.trecho{font-style:italic}
 .sr{position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap}
 @media (prefers-reduced-motion: reduce){ *{scroll-behavior:auto!important; transition:none!important} }
 </style>
+</head>
+<body>
 
 <main class="wrap">
   <header>
@@ -558,7 +564,7 @@ var Core=(function(){
     {t:'residuo',l:'atencao',g:'formal',re:/\b(?:ChatGPT|GPT-\d[\w.-]*|OpenAI|Gemini|Copilot|Claude|Anthropic|Llama|Grok|DeepSeek|Perplexity|Maritaca|Sabi[áa]-\d)\b/,m:'Nome de ferramenta de IA no corpo do texto.'},
     {t:'marcador',l:'erro',re:/\[\s*(?:inserir|inser[çc][ãa]o|colocar|incluir|preencher|adicionar|completar|indicar|informar|citar|substituir|nome|data|n[úu]mero|valor|cidade|comarca|vara|parte|autor|r[ée]u|apelante|apelado|agravante|agravado|relator|desembargador|ju[ií]z|processo|ementa|trecho|refer[êe]ncia|fonte|link|url|ano|local|campo|xxx+|nota|obs|observa[çc][ãa]o|aten[çc][ãa]o|aviso|lembrete|revisar|conferir|verificar|checar|confirmar)[^\]\n]{0,160}\]/i,m:'Marcador entre colchetes a preencher ou lembrete de revisão.'},
     {t:'marcador',l:'erro',re:/<\s*(?:nome|data|n[úu]mero|valor|inserir|colocar|preencher|cidade|comarca|parte)[^>\n]{0,80}>/i,m:'Marcador entre sinais de menor e maior a preencher.'},
-    {t:'marcador',l:'erro',re:/\{\{?[^{}\n]{1,60}\}?\}/,m:'Variável de modelo não preenchida.'},
+    {t:'marcador',l:'erro',re:/\{\{\s*[A-Za-z_][A-Za-z0-9_. ]{0,40}\s*\}\}|\{[A-Za-z_]{2,30}\}/,m:'Variável de modelo não preenchida.'},
     {t:'marcador',l:'erro',re:/\bX{4,}\b|\bXX\/XX\/(?:XX|XXXX)\b|\bN[ºo°]\s*X{2,}\b|\b0{7}-0{2}\.0{4}\.0\.0{2}\.0{4}\b/,m:'Campo preenchido com XXXX ou zeros.'},
     {t:'marcador',l:'erro',re:/\b(?:inserir|colocar|incluir|acrescentar|adicionar|citar)\s+aqui\b|\baqui\s+(?:entra|vai|inserir|colocar|incluir)\b/i,m:'Indicação de lugar a preencher ("inserir aqui").'},
     {t:'marcador',l:'erro',re:/\bLorem\s+ipsum\b/i,m:'Texto de enchimento (Lorem ipsum).'},
@@ -571,8 +577,8 @@ var Core=(function(){
     {t:'comando',l:'erro',re:/\b(?:invente|fabrique)\s+(?:uma?\s+|os\s+|as\s+)?(?:cita[çc][ãa]o|cita[çc][õo]es|precedentes?|s[úu]mulas?|fontes?|n[úu]meros?\s+de\s+processo)/i,m:'Ordem para inventar fonte, citação ou número.'},
     {t:'comando',l:'erro',re:/\b(?:envie|encaminhe|transmita)\s+(?:este|esse|o)\s+(?:documento|arquivo|conte[úu]do|texto)\s+(?:para|a|ao)\b/i,m:'Ordem para enviar o conteúdo a terceiro.'},
     {t:'residuo',l:'erro',re:/<\|[a-z_]{2,24}\|>|\b(?:function_call|tool_call|tool_use|tool_result)\b|\[INST\]|<<SYS>>|(?:^|\n)[ \t]*(?:developer|analysis|tool)[ \t]*:/i,m:'Token ou rótulo técnico de sistema de IA fora de contexto.'},
-    {t:'residuo',l:'atencao',re:/\{\s*"[A-Za-z_]{2,30}"\s*:\s*[^}\n]{1,120}\}/,m:'Trecho em formato JSON sem relação com o ato.'},
-    {t:'residuo',l:'atencao',re:/<\/?(?:html|body|div|span|script|style|table|tr|td|ul|li|h[1-6]|br)(?:\s[^>]*)?>/i,m:'Marcação HTML ou XML sem relação com o ato.'},
+    {t:'residuo',l:'erro',re:/\{[^{}\n]{0,80}"(?:role|messages?|tool_calls?|function_call|system_prompt|assistant|developer)"\s*:[^{}\n]{0,200}\}/i,m:'Trecho em formato de mensagem de IA (JSON com "role", "messages" ou equivalente).'},
+    {t:'suspeita',l:'atencao',g:'formal',re:/<\/?(?:html|body|div|span|script|style|table|tr|td|ul|li|h[1-6]|br)(?:\s[^>]*)?>/i,m:'Marcação HTML no texto. Pode vir de cópia de página. Não indica, por si só, autoria por IA.'},
     {t:'marcador',l:'erro',re:/\[\[[^\]\n]{1,80}\]\]/,m:'Marcador entre colchetes duplos a preencher.'}
   ];
   var MD_PATTERNS=[
@@ -2596,3 +2602,5 @@ var Core=(function(){
 
 })();
 </script>
+
+</body></html>
