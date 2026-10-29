@@ -218,8 +218,8 @@ button.trecho{font-style:italic}
     <textarea id="minuta" spellcheck="false" placeholder="Cole aqui o voto, a decisão ou a ementa. Para detectar texto oculto, comentários e alterações pendentes, abra o arquivo .docx."></textarea>
     <div class="acoes">
       <button type="button" class="btn primary" id="b-extrair">Verificar</button>
-      <button type="button" class="btn" id="b-arquivo">Abrir minuta (.docx, .txt, .md)</button>
-      <input type="file" id="arquivo" class="sr" accept=".docx,.txt,.md,.markdown" tabindex="-1" aria-label="Abrir minuta">
+      <button type="button" class="btn" id="b-arquivo">Abrir minuta (.docx, .pdf, .txt, .md)</button>
+      <input type="file" id="arquivo" class="sr" accept=".docx,.pdf,.txt,.md,.markdown" tabindex="-1" aria-label="Abrir minuta">
       <button type="button" class="btn" id="b-exemplo">Carregar exemplo</button>
       <button type="button" class="btn" id="b-limpar">Limpar</button>
     </div>
@@ -231,7 +231,7 @@ button.trecho{font-style:italic}
       <div class="acoes">
         <button type="button" class="btn" id="b-fonte">Adicionar fonte (colar)</button>
         <button type="button" class="btn" id="b-fonte-arq">Abrir arquivo como fonte</button>
-        <input type="file" id="arquivo-fonte" class="sr" accept=".docx,.txt,.md,.markdown" tabindex="-1" aria-label="Abrir arquivo como fonte">
+        <input type="file" id="arquivo-fonte" class="sr" accept=".docx,.pdf,.txt,.md,.markdown" tabindex="-1" aria-label="Abrir arquivo como fonte">
       </div>
     </div>
     <p class="dica">Autos, sentença, decisões, legislação, ementas. Dê a cada fonte um nome, ID ou evento. Sem fontes, o programa só confere o que depende do próprio texto e marca o resto como não verificável.</p>
@@ -323,6 +323,7 @@ button.trecho{font-style:italic}
         <li>Disfarces: caracteres invisíveis, Base64, letras de outro alfabeto, texto fragmentado e trechos em inglês.</li>
         <li>Inventário dos comandos da minuta (dispositivo e ordens à serventia), com origem nas fontes e contradição de valor ou resultado. O imperativo judicial não é tratado como injeção.</li>
         <li>Lacunas: documento citado e ausente do conjunto, salto de páginas, resultados opostos na mesma minuta, pedido da fonte que não aparece na minuta.</li>
+        <li>No .pdf: texto de cada página, texto em letra branca ou minúsculo, anotações e campos de formulário, destinos de links, metadados, anexos e ações em JavaScript.</li>
         <li>No .docx: texto formatado como oculto, letra branca, fonte minúscula, exclusões pendentes, comentários, alterações controladas, rodapés e notas.</li>
         <li>Suspeitas de alucinação: datas inexistentes, DJe anterior ao julgamento, artigo acima do último do código, súmula do STF acima da 736, número de lei incompatível com o ano, classe de um tribunal atribuída a outro, numeração em sequência, jurisprudência "pacífica" sem precedente, afirmação sobre os autos sem ID ou folha.</li>
       </ul>
@@ -330,7 +331,7 @@ button.trecho{font-style:italic}
       <ul>
         <li>Se o precedente, a súmula ou o tema existe de fato, ou se a tese é a que a minuta afirma. Exige consulta à fonte oficial.</li>
         <li>Nomes de partes, relator e conteúdo de fatos narrados.</li>
-        <li>PDF, imagem (sem OCR), objetos incorporados, macros, estilos herdados do Word, sobreposição visual, links e fontes externas. Para PDF, copie e cole o texto. Esses materiais tornam a auditoria inconclusiva quanto a eles.</li>
+        <li>Imagens e páginas digitalizadas (sem OCR), objetos incorporados, macros, estilos herdados do Word, camadas opcionais e sobreposição visual do PDF, links e fontes externas. Esses materiais tornam a auditoria inconclusiva quanto a eles.</li>
         <li>A correção jurídica do ato. A validação é do magistrado.</li>
       </ul>
     </details>
@@ -342,12 +343,13 @@ button.trecho{font-style:italic}
 </main>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script id="core">
 var Core=(function(){
   'use strict';
   var TYPE_LABEL={
     processo:'Processo',sumula:'Súmula',tema:'Tema',precedente:'Precedente',lei:'Norma',artigo:'Artigo',autos:'Autos',transcricao:'Transcrição',valor:'Valor',data:'Data',
-    comando:'Indício de comando',residuo:'Resíduo de IA',marcador:'Marcador a preencher',oculto:'Texto oculto',suspeita:'Suspeita de alucinação',doc:'Arquivo (.docx)',link:'Link'
+    comando:'Indício de comando',residuo:'Resíduo de IA',marcador:'Marcador a preencher',oculto:'Texto oculto',suspeita:'Suspeita de alucinação',doc:'Arquivo (.docx ou .pdf)',link:'Link'
   };
   var AUD={conf:'Confirmado',parc:'Parcialmente confirmado',nv:'Não verificável',div:'Divergente',sem:'Sem suporte localizado'};
   var GRAV_LABEL={critico:'Crítico',relevante:'Relevante',formal:'Formal'};
@@ -1422,8 +1424,18 @@ var Core=(function(){
     function add(comp,st,obs,crit){R.push({comp:comp,st:st,obs:obs,crit:!!crit});}
     var nUrl=S.items.filter(function(i){return i.type==='link'&&i.start>=0;}).length;
     add('Texto principal da minuta','ex',S.text.length.toLocaleString('pt-BR')+' caracteres lidos.');
+    if(c&&c.kind==='pdf'){
+      var sem=c.semTexto||[];
+      add('Arquivos e páginas','parc','1 arquivo PDF com '+pl(c.pages,'página','páginas')+'. O texto de '+pl(c.pages-sem.length,'página','páginas')+' foi lido.');
+      add('Texto das páginas, cabeçalhos e rodapés',sem.length?'na':'ex',sem.length?'Sem texto extraível: página(s) '+sem.slice(0,15).join(', ')+(sem.length>15?'…':'')+'. Podem ser digitalizações. O programa não faz OCR.':'Texto extraído de todas as páginas, com cabeçalhos e rodapés repetidos.',!!sem.length);
+      add('Anotações, comentários e campos de formulário','ex',pl(c.nCom,'anotação com conteúdo','anotações com conteúdo')+'; '+pl(c.nAnnot,'anotação','anotações')+' no total.');
+      add('Hiperlinks e destinos visíveis','ex',pl(c.links.length,'destino listado','destinos listados')+', sem abrir nenhum.');
+      add('Metadados e propriedades do documento','ex',c.meta?'Título, autor, assunto, palavras-chave e propriedades foram lidos.':'O arquivo não traz propriedades preenchidas.');
+      add('Imagens, digitalizações e anexos incorporados',(c.nEmb||c.nImg)?(c.nEmb?'na':'parc'):'ex',(c.nImg?pl(c.nImg,'imagem','imagens')+' no arquivo, sem OCR. Texto dentro de imagem não foi lido. ':'Nenhuma imagem. ')+(c.nEmb?pl(c.nEmb,'arquivo anexado','arquivos anexados')+' no PDF, não lido(s).':'Nenhum anexo.'),!!c.nEmb);
+      add('Texto oculto, em fonte branca ou minúscula, ou sobreposto','parc','Trechos encontrados: '+c.hidden+'. Texto fora da área da página (descartado pelo leitor de PDF), camadas opcionais, texto atrás de imagem ou de retângulos e cor definida por padrões não são detectados.');
+    }else
     if(!c){
-      var colado='Texto colado ou simples: essa camada não chegou ao programa. Para examiná-la, abra o arquivo .docx.';
+      var colado='Texto colado ou simples: essa camada não chegou ao programa. Para examiná-la, abra o arquivo .docx ou .pdf.';
       add('Arquivos e páginas','na','O programa não vê páginas, paginação nem o arquivo de origem.');
       add('Cabeçalhos, rodapés, notas de rodapé e notas finais','na',colado);
       add('Comentários, revisões controladas e alterações excluídas ou ocultas','na',colado);
@@ -1449,7 +1461,9 @@ var Core=(function(){
     if(!S.fontes.length) add('Fontes de comparação','na','Nenhuma fonte fornecida. Nada foi confirmado em fonte.');
     S.fontes.forEach(function(f){
       var fc=f.cob, n=f.text.length.toLocaleString('pt-BR');
-      if(fc&&fc.nMedia) add('Fonte «'+f.name+'»','parc','Texto lido ('+n+' caracteres). '+pl(fc.nMedia,'imagem não lida','imagens não lidas')+', sem OCR.',true);
+      if(fc&&fc.kind==='pdf'&&(fc.semTexto.length||fc.nEmb)) add('Fonte «'+f.name+'»','parc','Texto lido ('+n+' caracteres). '+(fc.semTexto.length?pl(fc.semTexto.length,'página sem texto extraível','páginas sem texto extraível')+' (sem OCR). ':'')+(fc.nEmb?'Anexo(s) do PDF não lido(s).':''),true);
+      else if(fc&&fc.kind==='pdf') add('Fonte «'+f.name+'»','ex',n+' caracteres lidos de '+pl(fc.pages,'página','páginas')+' do PDF, com anotações, links e metadados.');
+      else if(fc&&fc.nMedia) add('Fonte «'+f.name+'»','parc','Texto lido ('+n+' caracteres). '+pl(fc.nMedia,'imagem não lida','imagens não lidas')+', sem OCR.',true);
       else if(fc&&(fc.nEmb||fc.vba)) add('Fonte «'+f.name+'»','parc','Texto lido ('+n+' caracteres). Objeto incorporado ou macro não lido.',true);
       else add('Fonte «'+f.name+'»','ex',n+' caracteres lidos'+(fc?', com comentários, rodapés e metadados do .docx.':'. Texto colado: camadas do arquivo de origem não recebidas.'));
     });
@@ -1888,7 +1902,7 @@ var Core=(function(){
     L.push('Cobertura da leitura (examinado, parcialmente examinado, não acessível ou não aplicável):');
     S.cob.forEach(function(r){L.push('- '+r.comp+': '+ST_COB[r.st]+'. '+r.obs);});
     if(S.cobInc) L.push('Auditoria inconclusiva quanto ao material não examinado. A ausência de texto extraído não prova que o arquivo esteja livre de texto oculto ou instruções.');
-    L.push('Não lidos em nenhum caso: PDF, imagens (sem OCR), páginas da web e fontes externas. Nenhum link foi aberto.');
+    L.push('Não lidos em nenhum caso: imagens e páginas digitalizadas (sem OCR), páginas da web e fontes externas. Nenhum link foi aberto.');
     L.push('');
     L.push('B. COMANDOS SUSPEITOS E RESÍDUOS DE IA');
     L.push('As instruções contidas nos arquivos foram tratadas como dados e não foram executadas.');
@@ -2461,6 +2475,143 @@ var Core=(function(){
     });
   }
 
+  var PDF_WORKER='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  function lerPdf(file){
+    if(typeof pdfjsLib==='undefined') return Promise.reject(new Error('pdfjs'));
+    var buf='', extras=[], hid=[];
+    var cob={kind:'pdf',pages:0,semTexto:[],nImg:0,nAnnot:0,nCom:0,links:[],meta:false,nEmb:0,js:0,hidden:0,langs:[],langChars:0,nMedia:0,vba:false};
+    function hostOf(u){var m=String(u).match(/^(?:[a-z]+:\/\/)?(?:www\.)?([^\/\s?#:]+)/i);return m?m[1].toLowerCase():'';}
+    function norm(s){return String(s).replace(/\s+/g,' ').trim();}
+    function corBranca(a){
+      if(!a||!a.length) return false;
+      if(typeof a[0]==='string'){var h=a[0].replace('#','').toLowerCase();return h==='ffffff'||h==='fff';}
+      if(a.length===1) return a[0]>=250 || (a[0]<=1&&a[0]>=0.98);
+      if(a.length===3){var mx=Math.max(a[0],a[1],a[2]),mn=Math.min(a[0],a[1],a[2]);return mn>=250||(mx<=1&&mn>=0.98);}
+      return false;
+    }
+    return file.arrayBuffer().then(function(ab){
+      pdfjsLib.GlobalWorkerOptions.workerSrc=PDF_WORKER;
+      return pdfjsLib.getDocument({data:new Uint8Array(ab),isEvalSupported:false,enableXfa:false}).promise;
+    }).then(function(pdf){
+      cob.pages=pdf.numPages;
+      var OPS=pdfjsLib.OPS, chain=Promise.resolve();
+      function pagina(n){
+        return pdf.getPage(n).then(function(page){
+          var vp=page.getViewport({scale:1}), W=vp.width, H=vp.height, itens=[];
+          return page.getTextContent().then(function(tc){
+            itens=tc.items.filter(function(i){return typeof i.str==='string';});
+            buf+='\n— Página '+n+' —\n';
+            var p0=buf.length, txt='', pend=[];
+            itens.forEach(function(it){
+              var s0=buf.length; buf+=it.str; if(it.hasEOL) buf+='\n';
+              var t=it.transform||[0,0,0,0,0,0], alt=Math.abs(it.height||t[3]||0), x=t[4], y=t[5];
+              if(!it.str.trim()) return;
+              var motivos=[];
+              if(alt>0&&alt<2.5) motivos.push('fonte minúscula');
+              if(x>W+5||y>H+5||x<-5||y<-5) motivos.push('fora da área da página');
+              if(motivos.length) pend.push({start:s0,end:s0+it.str.length,reasons:motivos,str:it.str,n:n});
+            });
+            // agrupar trechos ocultos contíguos
+            var g=[];
+            pend.forEach(function(p){
+              var l=g[g.length-1];
+              if(l&&p.start-l.end<=2&&l.reasons.join()===p.reasons.join()){l.end=p.end;l.str+=p.str;} else g.push(p);
+            });
+            g.forEach(function(p){hid.push(p);});
+            var tem=buf.slice(p0).replace(/\s/g,'').length;
+            if(tem<20) cob.semTexto.push(n);
+            return page.getOperatorList();
+          }).then(function(ol){
+            var pilha=[], cor=false, branco=[], cur='';
+            for(var i=0;i<ol.fnArray.length;i++){
+              var f=ol.fnArray[i], a=ol.argsArray[i];
+              if(f===OPS.save) pilha.push(cor);
+              else if(f===OPS.restore) cor=pilha.length?pilha.pop():false;
+              else if(f===OPS.setFillRGBColor||f===OPS.setFillGray) cor=corBranca(f===OPS.setFillGray?[a[0]]:a);
+              else if(f===OPS.setFillCMYKColor) cor=false;
+              else if(f===OPS.paintImageXObject||f===OPS.paintInlineImageXObject||f===OPS.paintJpegXObject||f===OPS.paintImageMaskXObject) cob.nImg++;
+              else if((f===OPS.showText||f===OPS.showSpacedText)&&cor){
+                var gl=a[0]||[];
+                for(var k=0;k<gl.length;k++){ if(gl[k]&&gl[k].unicode) cur+=gl[k].unicode; else if(typeof gl[k]==='number'&&gl[k]<-200) cur+=' '; }
+                if(norm(cur).length>=3){branco.push(norm(cur));}
+                cur='';
+              }
+            }
+            branco.forEach(function(w){
+              var pg=buf.lastIndexOf('— Página '+n+' —'), pos=buf.indexOf(w,pg);
+              hid.push({start:pos,end:pos>=0?pos+w.length:-1,reasons:['letra branca'],str:w,n:n});
+            });
+            return page.getAnnotations();
+          }).then(function(an){
+            cob.nAnnot+=an.length;
+            an.forEach(function(a){
+              if(a.subtype==='Link'){
+                var d=a.url||a.unsafeUrl||'', t='';
+                if(!d&&a.action) d='(ação: '+a.action+')';
+                if(!d&&a.dest) d='(destino interno)';
+                if(a.rect){
+                  t=norm(itens.filter(function(it){var x=it.transform[4],y=it.transform[5];return x>=a.rect[0]-1&&x<=a.rect[2]+1&&y>=a.rect[1]-3&&y<=a.rect[3]+3;}).map(function(it){return it.str;}).join(''));
+                }
+                if(d&&!/^\(destino interno\)$/.test(d)) cob.links.push({t:t||'(sem texto visível)',d:d,n:n});
+              }else{
+                var c=norm(a.contentsObj&&a.contentsObj.str||a.contents||'');
+                var fv=a.fieldValue!=null?norm(Array.isArray(a.fieldValue)?a.fieldValue.join(' '):a.fieldValue):'';
+                var m=c||fv;
+                if(a.subtype==='Widget'||a.subtype==='Text'||a.subtype==='FreeText'||a.subtype==='Popup'||m){
+                  if(m){
+                    cob.nCom++;
+                    var s0=buf.length; buf+='\n— Anotação da página '+n+' ('+a.subtype+') —\n'+m+'\n';
+                    extras.push({type:'doc',start:s0,end:buf.length-1,alerts:[{lvl:'atencao',msg:'Anotação, comentário ou campo de formulário guardado no PDF (página '+n+'). Remova antes de assinar ou de compartilhar.'}]});
+                  }
+                }
+              }
+            });
+          });
+        });
+      }
+      for(var n=1;n<=pdf.numPages;n++) (function(k){chain=chain.then(function(){return pagina(k);});})(n);
+      chain=chain.then(function(){
+        if(!cob.links.length) return;
+        buf+='\n— Destinos de hiperlinks (não abertos) —\n';
+        cob.links.forEach(function(l){
+          var s0=buf.length; buf+='«'+l.t+'» → '+l.d+'\n';
+          var th=/^(?:https?:\/\/|www\.)|[a-z0-9-]+\.[a-z]{2,}(?:\/|$)/i.test(l.t)?hostOf(l.t):'', dh=hostOf(l.d);
+          if(th&&dh&&th!==dh) extras.push({type:'link',start:s0,end:buf.length-1,alerts:[{lvl:'atencao',msg:'O texto visível do link indica um endereço diferente do destino real. O programa não abriu o link.'}]});
+        });
+      });
+      chain=chain.then(function(){return pdf.getMetadata().catch(function(){return null;});}).then(function(md){
+        var L=[], lab={Title:'Título',Author:'Autor',Subject:'Assunto',Keywords:'Palavras-chave',Creator:'Criado por',Producer:'Gerado por'};
+        if(md&&md.info){
+          Object.keys(lab).forEach(function(k){var v=md.info[k]; if(v&&norm(v)) L.push(lab[k]+': '+norm(v));});
+          var cu=md.info.Custom; if(cu&&typeof cu==='object') Object.keys(cu).forEach(function(k){var v=cu[k]; if(v!=null&&String(v).trim()) L.push('Propriedade «'+k+'»: '+norm(v));});
+        }
+        if(md&&md.metadata&&md.metadata.get){
+          var d=md.metadata.get('dc:description'); if(d&&norm(d)) L.push('Descrição: '+norm(d));
+        }
+        if(L.length){cob.meta=true; buf+='\n— Metadados do documento —\n'+L.join('\n')+'\n';}
+      });
+      chain=chain.then(function(){return pdf.getAttachments().catch(function(){return null;});}).then(function(at){
+        if(at){cob.nEmb=Object.keys(at).length; cob.nMedia=0;}
+        return (pdf.getJSActions?pdf.getJSActions().catch(function(){return null;}):Promise.resolve(null));
+      }).then(function(js){
+        if(js){ var n=0; Object.keys(js).forEach(function(k){n+=(js[k]||[]).length;}); cob.js=n; }
+        if(cob.js) extras.push({type:'doc',start:-1,end:-1,text:'',alerts:[{lvl:'erro',msg:'O PDF contém '+cob.js+' ação(ões) em JavaScript. O programa não as executou. Remova o código antes de usar o arquivo.'}]});
+      });
+      return chain.then(function(){
+        hid.forEach(function(h){
+          var forte=h.reasons.some(function(x){return x!=='letra branca';})||true;
+          extras.push({type:'oculto',start:h.start,end:h.end,text:h.start<0?h.str:undefined,alerts:[{lvl:'erro',msg:'Texto oculto no PDF, página '+h.n+' ('+h.reasons.join('; ')+'). Não aparece na leitura normal e pode conter comando. Confira e remova.'}]});
+        });
+        cob.hidden=hid.length;
+        if(cob.semTexto.length) extras.push({type:'doc',start:-1,end:-1,text:'',alerts:[{lvl:'atencao',msg:'Páginas sem texto extraível: '+cob.semTexto.slice(0,15).join(', ')+(cob.semTexto.length>15?'…':'')+'. Podem ser imagens ou digitalizações. O programa não faz OCR e essas páginas não foram lidas.'}]});
+        return {text:buf.replace(/\n{4,}/g,'\n\n\n'),extras:extras,hidden:hid.length,comments:cob.nCom,cob:cob};
+      });
+    }).catch(function(err){
+      if(err&&(err.name==='PasswordException')) throw new Error('senha');
+      throw err;
+    });
+  }
+
   function nomeExtras(nome){
     var ex=[];
     Core.scan(nome).forEach(function(x){
@@ -2483,6 +2634,16 @@ var Core=(function(){
       run(texto,extras);
       aviso('Arquivo "'+f.name+'" lido. '+resumo);
     };
+    if(/\.pdf$/.test(nome)){
+      aviso('Lendo o PDF…');
+      return lerPdf(f).then(function(r){
+        var c=r.cob;
+        pronto(r.text,r.extras,pl(c.pages,'página lida','páginas lidas')+', '+r.hidden+' trecho(s) oculto(s), '+c.nCom+' anotação(ões), '+c.links.length+' link(s)'+(c.semTexto.length?' e '+pl(c.semTexto.length,'página sem texto extraível','páginas sem texto extraível')+' (sem OCR)':'')+'.',c);
+      }).catch(function(err){
+        var m=err&&err.message;
+        aviso(m==='pdfjs'?'A biblioteca de leitura de PDF não carregou. Cole o texto na caixa.':m==='senha'?'O PDF está protegido por senha. Remova a proteção ou cole o texto.':'Não foi possível ler o PDF. Cole o texto na caixa.');
+      });
+    }
     if(/\.docx$/.test(nome)){
       aviso('Lendo o arquivo…');
       return lerDocx(f).then(function(r){
