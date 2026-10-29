@@ -9,6 +9,7 @@
 /* Layout: barra lateral com abas (Minuta, Resumo, Itens, Autoria, Gramática, Segurança, Saídas, Ajuda), cabeçalho fixo com status e área de conteúdo rolável. */
 :root{
   --bg:#E9E6E1; --surface:#FFFFFF; --fg:#0E2F3D; --muted:#55707F; --line:#D5D0C7;
+  --hl:rgba(242,169,59,.38); --hl-on:rgba(242,169,59,.7); --hl-bd:rgba(180,110,0,.55); --hl-bd2:#B36B00;
   --accent:#0B5A78; --accent-ink:#FFFFFF; --accent-soft:#DCEBF1;
   --ok:#1B7048; --ok-soft:#DDF1E6;
   --bad:#B3261E; --bad-soft:#F9E0DE;
@@ -22,7 +23,8 @@
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
     --bg:#0B1220; --surface:#111A2E; --fg:#E8EEF5; --muted:#95A5B8; --line:#212E45;
-    --accent:#F2A93B; --accent-ink:#1A1203; --accent-soft:#2B2210;
+    --hl:rgba(242,169,59,.30); --hl-on:rgba(242,169,59,.55); --hl-bd:rgba(242,169,59,.6); --hl-bd2:#F2A93B;
+  --accent:#F2A93B; --accent-ink:#1A1203; --accent-soft:#2B2210;
     --ok:#5FD08F; --ok-soft:#14301F;
     --bad:#FF8A84; --bad-soft:#3A1B1D;
     --warn:#FFB86B; --warn-soft:#3A2614;
@@ -33,6 +35,7 @@
 }
 :root[data-theme="dark"]{
   --bg:#0B1220; --surface:#111A2E; --fg:#E8EEF5; --muted:#95A5B8; --line:#212E45;
+  --hl:rgba(242,169,59,.30); --hl-on:rgba(242,169,59,.55); --hl-bd:rgba(242,169,59,.6); --hl-bd2:#F2A93B;
   --accent:#F2A93B; --accent-ink:#1A1203; --accent-soft:#2B2210;
   --ok:#5FD08F; --ok-soft:#14301F;
   --bad:#FF8A84; --bad-soft:#3A1B1D;
@@ -156,6 +159,16 @@ textarea:focus-visible,input:focus-visible,button:focus-visible,summary:focus-vi
 @media (min-width:901px){ .scroll{max-height:min(78vh,920px); overflow:auto} }
 @media (max-width:900px){ .panes{grid-template-columns:minmax(0,1fr)} }
 #texto{font-family:var(--f-text); font-size:16.5px; line-height:1.75; padding:20px 22px; white-space:pre-wrap; overflow-wrap:anywhere}
+mark.foco{color:inherit; background:var(--hl); border-radius:3px; padding:1px 0; box-shadow:0 0 0 1px var(--hl-bd)}
+mark.foco.atual{background:var(--hl-on); box-shadow:0 0 0 2px var(--hl-bd2)}
+.foco-bar{position:sticky; top:0; z-index:8; box-shadow:0 2px 8px rgba(0,0,0,.18); display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin:0 0 10px; padding:8px 10px; border:1px solid var(--hl-bd); background:var(--surface); border-left:6px solid var(--hl-bd2); border-radius:8px; font-size:13px}
+.foco-bar[hidden]{display:none}
+.foco-bar b{font-weight:600}
+.foco-bar .fb-btn{border:1px solid var(--line,var(--hl-bd)); background:var(--surface,transparent); color:inherit; border-radius:6px; padding:3px 9px; font:inherit; cursor:pointer}
+.foco-bar .fb-btn:hover{border-color:var(--accent)}
+button.ver{border:1px solid var(--accent); color:var(--accent); background:transparent; border-radius:6px; padding:2px 8px; font:inherit; font-size:12px; cursor:pointer; white-space:nowrap}
+button.ver:hover{background:var(--accent-soft)}
+button.ver:focus-visible,.foco-bar .fb-btn:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
 mark.m{color:inherit; background:var(--mk-pend); border-radius:3px; padding:1px 2px; cursor:pointer; box-decoration-break:clone; -webkit-box-decoration-break:clone}
 mark.m[data-type="transcricao"]{background:var(--mk-quote); font-style:italic}
 mark.m[data-kind="achado"]{background:var(--warn-soft)}
@@ -280,6 +293,8 @@ button.trecho{font-style:italic}
 .vazio-res b{color:var(--fg); font-size:17px}
 .saida{padding:18px}
 @media (prefers-reduced-motion: reduce){ *{scroll-behavior:auto!important; transition:none!important} }
+
+.diag{margin-top:14px;display:grid;gap:8px;min-width:0}.diag h2{font-size:1.15rem;margin:8px 0 0}.diag h3{font-size:1.02rem;margin:14px 0 0;padding-top:8px;border-top:1px solid var(--bd,#ccc)}.diag h4{font-size:.95rem;margin:8px 0 0}.diag p{margin:0}.diag ul{margin:0;padding-left:1.2em}.diag .tw{overflow-x:auto;max-width:100%}.diag table{border-collapse:collapse;width:100%;font-size:.84rem}.diag th,.diag td{border:1px solid var(--bd,#ccc);padding:5px 8px;text-align:left;vertical-align:top;overflow-wrap:anywhere}.diag th{background:var(--hl,#eef);font-weight:600}
 </style>
 </head>
 <body>
@@ -358,6 +373,7 @@ button.trecho{font-style:italic}
 
         <section class="tab" id="tab-itens" hidden aria-label="Itens e texto">
           <div class="tab-h"><h2>Itens e texto</h2><p>Clique num trecho marcado para ir ao item, ou num item para ver o trecho.</p></div>
+<div class="foco-bar" id="foco-bar" hidden role="region" aria-label="Destaque no texto"><span id="fb-txt"></span><button type="button" class="fb-btn" id="fb-ant" aria-label="Ocorrência anterior">◀</button><button type="button" class="fb-btn" id="fb-prox" aria-label="Próxima ocorrência">▶</button><button type="button" class="fb-btn" id="fb-volta">Voltar ao módulo</button><button type="button" class="fb-btn" id="fb-lim">Limpar destaque</button></div>
           <div class="panes">
       <section class="pane" aria-label="Texto da minuta">
         <div class="pane-head"><div class="linha-h"><h2>Texto da minuta</h2></div><span class="dica">Clique num trecho marcado para ir ao item. Caracteres invisíveis aparecem como ◇.</span></div>
@@ -405,6 +421,7 @@ button.trecho{font-style:italic}
         <section class="tab" id="tab-saidas" hidden aria-label="Saídas e relatórios">
           <div class="tab-h"><h2>Saídas e relatórios</h2><p>Gere o relatório, as versões corrigidas ou salve a verificação com as indicações de correção.</p></div>
           <div class="grid-c">
+            <div class="panel card-a"><div><b>Relatório diagnóstico</b><p>Leitura fácil, com tabelas: conclusão, segurança, cobertura, citações, autoria, gramática e providências.</p></div><div class="saidas" role="group" aria-label="Relatório diagnóstico"><button type="button" class="btn primary" id="b-diag">Gerar diagnóstico</button><button type="button" class="btn" data-diag="docx">.docx</button><button type="button" class="btn" data-diag="md">.md</button></div></div>
             <div class="panel card-a"><div><b>Relatório de auditoria</b><p>Resultado, cobertura, comandos, citações, pendências, autoria e gramática.</p></div><button type="button" class="btn" id="b-relatorio">Gerar relatório</button></div>
             <div class="panel card-a"><div><b>Versão higienizada</b><p>Remove comandos, resíduos de IA e texto oculto críticos. Limpeza mecânica.</p></div><button type="button" class="btn" id="b-sanit">Gerar versão</button></div>
             <div class="panel card-a"><div><b>Texto corrigido</b><p>Aplica só as correções gramaticais seguras e lista o que ficou pendente.</p></div><button type="button" class="btn" id="b-gram">Gerar texto</button></div>
@@ -452,6 +469,8 @@ button.trecho{font-style:italic}
         <li>No .docx: texto formatado como oculto, letra branca, fonte minúscula, exclusões pendentes, comentários, alterações controladas, rodapés e notas.</li>
         <li>Revisão gramatical do português culto do Brasil: grafia, acentuação, crase, concordância, regência, morfologia verbal, colocação pronominal, pontuação, convenções jurídicas (ordinais, parágrafos, valores), coesão, períodos longos e estilo, com texto corrigido (correções seguras).</li>
         <li>Parecer sobre possível autoria por IA: percentual estimado com faixa, confiança e cenário (redação integral, edição assistida, indefinido, humana); indícios a favor e contra com peso (resíduos de chat, formatação de chatbot, metadados, burstiness em janelas, riqueza lexical, conectivos, pontuação, geometria de parágrafos, previsibilidade interna, ofuscação, referências concretas, alucinações); ajuste para linguagem jurídica formular; limite conservador por convergência de famílias; mapa de parágrafos que explica onde está o sinal.</li>
+        <li>Botão «Ver no texto»: nas abas Autoria por IA, Gramática e Segurança, cada indício, categoria ou achado traz o botão. Ele abre a minuta com o trecho destacado, com setas para navegar entre as ocorrências e o botão «Voltar ao módulo».</li>
+        <li>Relatório diagnóstico (aba Saídas): leitura fácil, com tabelas de conclusão, números, segurança, cobertura, citações, achados, comandos, lacunas, autoria, gramática e providências por prioridade. Salva em .docx (com tabelas), .txt e .md.</li>
         <li>Suspeitas de alucinação: datas inexistentes, DJe anterior ao julgamento, artigo acima do último do código, súmula do STF acima da 736, número de lei incompatível com o ano, classe de um tribunal atribuída a outro, numeração em sequência, jurisprudência "pacífica" sem precedente, afirmação sobre os autos sem ID ou folha.</li>
       </ul>
       <h3>Não verifica</h3>
@@ -1747,6 +1766,80 @@ var Core=(function(){
     else concl+='Os padrões são mais compatíveis com texto gerado ou reescrito por IA do que com redação humana espontânea. Recomenda-se conferir a origem e revisar integralmente o conteúdo.';
     return {pct:pct,lo:lo,hi:hi,nivel:nivel,titulo:titulo,conf:conf,ind:ind,pro:pro,con:con,N:N,direto:direto,conclusao:concl,cenario:cenario,conv:conv,dom:dom,medidas:medidas,mapa:mapa};
   }
+  /* ---------- evidências locais dos indícios de autoria (trechos para «ver no texto») ---------- */
+  function evidencias(text,a,items){
+    text=String(text||''); items=items||[];
+    var body=new Uint8Array(text.length+1), corpo=[], skip=false, off=0, lines=text.split('\n');
+    lines.forEach(function(l){
+      var s=off, e=off+l.length; off=e+1;
+      if(/^— .* —$/.test(l.trim())){ skip=/^— (?:Metadados|Destinos)/.test(l.trim()); return; }
+      if(skip) return;
+      for(var q=s;q<e;q++) body[q]=1;
+      corpo.push({s:s,e:e,l:l});
+    });
+    var CAP=400, R={ind:{},mapa:[]};
+    function wc(s){return s.trim().split(/\s+/).filter(Boolean).length;}
+    function sp(re,filt){
+      var r=new RegExp(re.source,'g'+(re.ignoreCase?'i':'')+(re.unicode?'u':'')), m, out=[];
+      while((m=r.exec(text))!==null){
+        if(!m[0].length){r.lastIndex++;continue;}
+        if(filt!==false&&!body[m.index]) continue;
+        out.push({s:m.index,e:m.index+m[0].length}); if(out.length>=CAP) break;
+      }
+      return out;
+    }
+    function spMany(res,filt){var o=[]; res.forEach(function(r){o=o.concat(sp(r,filt));}); return o.sort(function(x,y){return x.s-y.s;}).slice(0,CAP);}
+    function sents(){return sentences(text).filter(function(z){return body[z.s]&&wc(z.t)>=3;});}
+    var SS=null; function S0(){return SS||(SS=sents());}
+    var CONRX=/^\s*(?:Ademais|Outrossim|Portanto|Assim|Dessa forma|Desse modo|Nesse sentido|Além disso|Contudo|Todavia|Entretanto|No entanto|Por conseguinte|Por fim|Em suma|Em síntese|Logo|Dessarte|Destarte|Diante disso|Dito isso|Por outro lado|Com efeito)\b/i;
+    function sent2spans(pred){return S0().filter(pred).map(function(z){return {s:z.s,e:z.e};}).slice(0,CAP);}
+    var NOTA_G='Medida global do texto: não há trecho específico a mostrar.';
+    (a&&a.ind||[]).forEach(function(i){
+      var n=i.nome, sps=[], nota='';
+      if(/^Resíduos/.test(n)) sps=items.filter(function(x){return x.kind==='achado'&&x.type==='residuo'&&x.start>=0;}).map(function(x){return {s:x.start,e:x.end};});
+      else if(/^Variáveis/.test(n)) sps=items.filter(function(x){return x.kind==='achado'&&x.type==='marcador'&&x.start>=0&&/[{\[]|_{3,}|XXX/.test(x.text||'');}).map(function(x){return {s:x.start,e:x.end};});
+      else if(/^Metadados citam/.test(n)){var r=new RegExp(IA_FERR.source,'gi'),m; while((m=r.exec(text))!==null){ if(!body[m.index]) sps.push({s:m.index,e:m.index+m[0].length}); } if(!sps.length) nota='Os metadados do arquivo não estão no corpo do texto.';}
+      else if(/^Fórmulas de assistente/.test(n)) sps=spMany(IA_FORTES);
+      else if(/^Formatação de chat/.test(n)) sps=spMany([/\*\*[^*\n]{2,80}\*\*/,/^\s{0,3}#{1,4}\s+\S[^\n]*/m,/[\u{1F300}-\u{1FAFF}✅❌✔✨]/u]);
+      else if(/^Densidade de conectivos/.test(n)) sps=spMany(IA_FRACAS);
+      else if(/^Uniformidade do tamanho das frases|^Concentração de frases/.test(n)) sps=sent2spans(function(z){var k=wc(z.t); return k>=15&&k<=28;});
+      else if(/^Janelas de 10 frases/.test(n)){
+        var all=S0(), len=all.map(function(z){return wc(z.t);}), flat={};
+        for(var a0=0;a0+10<=len.length;a0+=5){var seg=len.slice(a0,a0+10); if(Math.max.apply(null,seg)-Math.min.apply(null,seg)<15) for(var k=a0;k<a0+10;k++) flat[k]=1;}
+        sps=all.filter(function(z,k){return flat[k];}).map(function(z){return {s:z.s,e:z.e};}).slice(0,CAP);
+      }
+      else if(/^Uniformidade do tamanho dos parágrafos/.test(n)) sps=corpo.filter(function(c){return wc(c.l)>=15;}).map(function(c){return {s:c.s,e:c.e};}).slice(0,CAP);
+      else if(/^Geometria regular/.test(n)) sps=corpo.filter(function(c){return wc(c.l)>=20&&sentences(c.l).length>=3&&sentences(c.l).length<=5;}).map(function(c){return {s:c.s,e:c.e};}).slice(0,CAP);
+      else if(/^Frases iniciadas por conectivo/.test(n)) sps=sent2spans(function(z){return CONRX.test(z.t);});
+      else if(/^Assimetria da pontuação/.test(n)){
+        var cs=S0().map(function(z){return (z.t.match(/,/g)||[]).length;}), srt=cs.slice().sort(function(x,y){return x-y;}), med=srt[Math.floor(srt.length/2)]||0;
+        sps=S0().filter(function(z,k){return cs[k]===med;}).map(function(z){return {s:z.s,e:z.e};}).slice(0,CAP);
+      }
+      else if(/^Repetição de sequências/.test(n)){
+        var tk=[], r2=/\S+/g, m2; while((m2=r2.exec(text))!==null){ if(body[m2.index]) tk.push({w:semAcento(m2[0]).replace(/[^a-z0-9]/g,''),s:m2.index,e:m2.index+m2[0].length}); }
+        tk=tk.filter(function(t){return t.w;}); var seen={};
+        for(var q=0;q+2<tk.length&&sps.length<CAP;q++){var kk=tk[q].w+' '+tk[q+1].w+' '+tk[q+2].w; if(seen[kk]) sps.push({s:tk[q].s,e:tk[q+2].e}); else seen[kk]=1;}
+      }
+      else if(/^Referências concretas/.test(n)){
+        if(i.ef<0) sps=sp(/\d{7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}|\bID\s*\d{5,}|\bfls?\.\s*\d+|\b\d{1,2}\/\d{1,2}\/\d{2,4}\b|R\$\s*\d[\d.,]*|\bart(?:s|igo)?\.?\s*\d+|\bn[ºo°]\s*[\d.]+|S[úu]mula\s+\d+|Tema\s+\d+/i);
+        else sps=corpo.filter(function(c){return wc(c.l)>=40&&!/\d/.test(c.l);}).map(function(c){return {s:c.s,e:c.e};}).slice(0,CAP);
+      }
+      else if(/^Sinais de alucinação/.test(n)) sps=items.filter(function(x){return x.start>=0&&((x.kind==='achado'&&x.type==='suspeita'&&x.alerts.some(function(al){return al.g!=='formal';}))||(x.kind==='cit'&&x.audit&&x.audit.res==='sem'));}).map(function(x){return {s:x.start,e:x.end};});
+      else if(/^Uso de travessão/.test(n)) sps=sp(/ — /);
+      else if(/^Tópicos com rótulo/.test(n)) sps=corpo.filter(function(c){return /^\s*(?:[-•*]\s*)?[A-ZÁÉÍÓÚÂÊÔÃÕÇ][^:\n]{2,40}:\s+\S/.test(c.l);}).map(function(c){return {s:c.s,e:c.e};}).slice(0,CAP);
+      else if(/^Trechos em inglês/.test(n)) sps=sp(/\b(?:the|and|with|that|this|which|should|would)\b/i);
+      else if(/^Posicionamento pessoal/.test(n)) sps=sp(/\b(?:entendo|a meu ver|em meu sentir|com a devida vênia|data venia|filio-me|perfilho|divirjo|ressalvo)\b/i);
+      else if(/^Irregularidades de digitação/.test(n)) sps=sp(/ {2,}\S|\s[,.;]\S|,,|\.\./);
+      else if(/^Sinais de ofuscação/.test(n)) sps=spMany([new RegExp(INVIS_RE.source,'u'),/[A-Za-z][Ѐ-ӿͰ-Ͽ]|[Ѐ-ӿͰ-Ͽ][A-Za-z]/],false);
+      else if(/^Registro jurídico formular/.test(n)) sps=spMany([/nos termos d[oa]s?\b/i,/ante o exposto|diante do exposto|isso posto/i,/data venia|com a devida vênia/i,/recurso (?:conhecido|provido|desprovido|improvido)/i,/\bart(?:s|igo)?\.\s*\d+/i,/\b(?:CPC|CF|CC|CDC|STJ|STF|TJPB|CPP|CLT)\b/,/\bDJe\b/]);
+      else nota=NOTA_G;
+      if(!sps.length&&!nota) nota=(/^Riqueza|^Diversidade|^Previsibilidade|^Ausência/.test(n))?NOTA_G:'Nenhum trecho específico localizado para este indício.';
+      R.ind[n]={spans:sps,nota:nota};
+    });
+    // mapa de parágrafos: mesma seleção usada em autoria() (linhas com 20 palavras ou mais)
+    corpo.forEach(function(c){ if(wc(c.l)>=20) R.mapa.push({s:c.s+(c.l.length-c.l.replace(/^\s+/,'').length),e:c.e}); });
+    return R;
+  }
   /* ---------- revisão gramatical e textual (português do Brasil, norma culta) ---------- */
   var GL_='\\p{L}\\p{N}';
   function RX(src,fl){return new RegExp(src.replace(/<b>/g,'(?<!['+GL_+'])').replace(/<e>/g,'(?!['+GL_+'])'),fl||'giu');}
@@ -1913,7 +2006,7 @@ var Core=(function(){
     log.reverse();
     return {text:t,log:log};
   }
-  return {NORMAS:NORMAS,baseAudit:baseAudit,resolveDip:resolveDip,gramatica:gramatica,gramCorrigir:gramCorrigir,autoria:autoria,TYPE_LABEL:TYPE_LABEL,AUD:AUD,GRAV_LABEL:GRAV_LABEL,ORD:ORD,extract:extract,scan:scan,compare:compare,cnjDV:cnjDV,sample:sample,sevOf:sevOf,gravOf:gravOf,alertGrav:alertGrav,
+  return {evidencias:evidencias,NORMAS:NORMAS,baseAudit:baseAudit,resolveDip:resolveDip,gramatica:gramatica,gramCorrigir:gramCorrigir,autoria:autoria,TYPE_LABEL:TYPE_LABEL,AUD:AUD,GRAV_LABEL:GRAV_LABEL,ORD:ORD,extract:extract,scan:scan,compare:compare,cnjDV:cnjDV,sample:sample,sevOf:sevOf,gravOf:gravOf,alertGrav:alertGrav,
     audit:audit,auditItem:auditItem,sanitize:sanitize,tagEnc:tagEnc,instrucoes:instrucoes,comandos:comandos,lacunas:lacunas,CLS:CLS,LAC_TIPO:LAC_TIPO,localOf:localOf,deob:deob};
 })();
 </script>
@@ -1935,7 +2028,7 @@ var Core=(function(){
   function vis(s){
     return esc(s).replace(INVIS,function(c){
       var cp=c.codePointAt(0);
-      return '<span class="inv" title="U+'+cp.toString(16).toUpperCase()+'">◇</span>';
+      return '<span class="inv" title="U+'+cp.toString(16).toUpperCase()+'">◇'+(c.length>1?'&#8203;':'')+'</span>';
     });
   }
   function tokens(s){return s.replace(INVIS,function(c){return '⟦U+'+c.codePointAt(0).toString(16).toUpperCase()+'⟧';});}
@@ -2056,7 +2149,12 @@ var Core=(function(){
 
   function celTrecho(r){
     var t=oneLine(r.trecho.replace(INVIS,'◇'),120);
-    return '<button type="button" class="link trecho" data-goto="'+r.id+'">«'+esc(t)+'»</button>'+(r.decod?'<br><span class="dica">Decodificado: «'+esc(oneLine(r.decod,120))+'»</span>':'');
+    return '<button type="button" class="link trecho" data-goto="'+r.id+'">«'+esc(t)+'»</button>'+(r.decod?'<br><span class="dica">Decodificado: «'+esc(oneLine(r.decod,120))+'»</span>':'')+(r.pos>=0?'<br>'+ref('Comando suspeito',spanLinha(r.pos,Math.max(20,(r.trecho||'').length)),'Ver no texto'):'');
+  }
+  function ondeInd(i){
+    var e=S.evid&&S.evid.ind&&S.evid.ind[i.nome]; if(!e) return '';
+    if(e.spans.length) return ref(i.nome,e.spans);
+    return '<span class="dica">'+esc(e.nota||'')+'</span>';
   }
   function renderAut(){
     var a=S.aut;
@@ -2066,12 +2164,12 @@ var Core=(function(){
     var h='<div class="aut-topo"><div class="aut-pct" style="color:'+cor+'">'+a.pct+'%</div><div><strong>'+esc(a.titulo)+'</strong><br><span class="dica">Faixa provável: '+a.lo+'% a '+a.hi+'%. Confiança: '+esc(a.conf)+'. Corpo analisado: '+a.N.toLocaleString('pt-BR')+' palavras.</span></div></div>';
     h+='<div class="aut-barra" role="img" aria-label="Probabilidade estimada de redação por IA: '+a.pct+'%"><i style="left:'+a.lo+'%;width:'+(a.hi-a.lo)+'%"></i><b style="left:'+a.pct+'%"></b></div>';
     h+='<p><strong>Cenário mais compatível:</strong> '+esc(a.cenario)+'</p><p>'+esc(a.conclusao)+'</p>';
-    h+='<div class="tbl-w"><table class="tbl"><thead><tr><th>Indício</th><th>Medição</th><th>Efeito (peso)</th><th>Leitura</th></tr></thead><tbody>';
-    a.ind.forEach(function(i){var ef=i.efAj!==undefined?i.efAj:i.ef; h+='<tr><td>'+esc(i.nome)+'</td><td>'+esc(i.medido)+'</td><td><span class="tag '+(ef>0?'na':ef<0?'ex':'nap')+'">'+(ef>0?'Indica IA':ef<0?'Indica autoria humana':'Neutro')+'</span> <span class="dica">'+(ef>0?'+':'')+ef.toFixed(2)+(i.efAj!==undefined&&i.efAj!==i.ef?' (ajustado de '+i.ef.toFixed(2)+')':'')+'</span></td><td>'+esc(i.leitura)+'</td></tr>';});
+    h+='<div class="tbl-w"><table class="tbl"><thead><tr><th>Indício</th><th>Medição</th><th>Efeito (peso)</th><th>Leitura</th><th>Onde</th></tr></thead><tbody>';
+    a.ind.forEach(function(i){var ef=i.efAj!==undefined?i.efAj:i.ef; h+='<tr><td>'+esc(i.nome)+'</td><td>'+esc(i.medido)+'</td><td><span class="tag '+(ef>0?'na':ef<0?'ex':'nap')+'">'+(ef>0?'Indica IA':ef<0?'Indica autoria humana':'Neutro')+'</span> <span class="dica">'+(ef>0?'+':'')+ef.toFixed(2)+(i.efAj!==undefined&&i.efAj!==i.ef?' (ajustado de '+i.ef.toFixed(2)+')':'')+'</span></td><td>'+esc(i.leitura)+'</td><td>'+ondeInd(i)+'</td></tr>';});
     h+='</tbody></table></div>';
     if(a.mapa&&a.mapa.length){
-      h+='<h3>Mapa de parágrafos (explicação local)</h3><p class="dica">Pontuação local de cada parágrafo e os fatores que a produziram. Parágrafos acima de 60 merecem exame humano.</p><div class="tbl-w"><table class="tbl"><thead><tr><th>#</th><th>Início do parágrafo</th><th>Palavras</th><th>Índice local</th><th>Fatores</th></tr></thead><tbody>';
-      a.mapa.slice(0,60).forEach(function(m){var c=m.score>=60?'var(--bad)':m.score>=40?'var(--warn)':'var(--ok)'; h+='<tr><td>'+m.n+'</td><td>'+esc(m.ini)+'…</td><td>'+m.pal+'</td><td><strong style="color:'+c+'">'+m.score+'</strong></td><td>'+esc(m.drivers.join('; ')||'nenhum')+'</td></tr>';});
+      h+='<h3>Mapa de parágrafos (explicação local)</h3><p class="dica">Pontuação local de cada parágrafo e os fatores que a produziram. Parágrafos acima de 60 merecem exame humano.</p><div class="tbl-w"><table class="tbl"><thead><tr><th>#</th><th>Início do parágrafo</th><th>Palavras</th><th>Índice local</th><th>Fatores</th><th>Onde</th></tr></thead><tbody>';
+      a.mapa.slice(0,60).forEach(function(m){var c=m.score>=60?'var(--bad)':m.score>=40?'var(--warn)':'var(--ok)'; h+='<tr><td>'+m.n+'</td><td>'+esc(m.ini)+'…</td><td>'+m.pal+'</td><td><strong style="color:'+c+'">'+m.score+'</strong></td><td>'+esc(m.drivers.join('; ')||'nenhum')+'</td><td>'+(S.evid&&S.evid.mapa[m.n-1]?ref('Parágrafo '+m.n+' (índice '+m.score+')',[S.evid.mapa[m.n-1]],'Ver'):'')+'</td></tr>';});
       h+='</tbody></table></div>';
     }
     h+='<p class="nota">Método: estilometria (burstiness em janelas de dez frases, riqueza lexical, conectivos, pontuação, geometria de parágrafos, previsibilidade interna), marcas diretas de ferramentas de IA, sinais de ofuscação e achados desta verificação. Há ajuste para linguagem jurídica formular e limite conservador: percentual acima de 59% exige convergência de três famílias de indícios. Métodos baseados em modelo de linguagem (DetectGPT, Fast-DetectGPT, Binoculars) não rodam neste navegador. O percentual é estimativa por indícios e não prova autônoma de autoria. Não distingue texto humano revisado por IA de texto de IA revisado por humano.</p>';
@@ -2082,16 +2180,28 @@ var Core=(function(){
     $('#n-gram').textContent=g.length?pl(g.length,'ocorrência','ocorrências')+' ('+g.filter(function(x){return x.auto;}).length+' corrigíveis automaticamente)':'nenhuma ocorrência';
     if(!g.length){ el.innerHTML='<p class="nota">Nenhuma ocorrência gramatical foi localizada pelas regras do programa (grafia, acentuação, crase, concordância, regência, colocação pronominal, pontuação, convenções jurídicas, coesão e estilo). Isso não substitui a revisão humana: o programa não tem dicionário completo nem analisa todo o sentido da frase.</p>'; return; }
     var cat={}; g.forEach(function(x){cat[x.cat]=(cat[x.cat]||0)+1;});
-    var h='<p class="nota">Trechos entre aspas de citação foram ignorados. Sugestões de confiança baixa ou média exigem juízo humano. O botão «Texto corrigido» aplica só as correções seguras.</p><p>'+Object.keys(cat).sort().map(function(k){return '<span class="tag nap">'+esc(k)+': '+cat[k]+'</span> ';}).join('')+'</p>';
-    h+='<div class="tbl-w"><table class="tbl"><thead><tr><th>Linha</th><th>Categoria</th><th>Trecho</th><th>Correção sugerida</th><th>Observação</th><th>Confiança</th></tr></thead><tbody>';
-    g.slice(0,400).forEach(function(x){h+='<tr><td>'+x.linha+'</td><td>'+esc(x.cat)+'</td><td>«'+esc(oneLine(x.trecho,80))+'»</td><td>'+(x.sug!==null?'«'+esc(oneLine(x.sug.trim(),80))+'»'+(x.auto?' <span class="tag ex">automática</span>':''):'—')+'</td><td>'+esc(x.msg)+'</td><td>'+esc(x.conf)+'</td></tr>';});
+    var h='<p class="nota">Trechos entre aspas de citação foram ignorados. Sugestões de confiança baixa ou média exigem juízo humano. O botão «Texto corrigido» aplica só as correções seguras.</p><p>'+Object.keys(cat).sort().map(function(k){return '<span class="tag nap">'+esc(k)+': '+cat[k]+'</span> '+ref('Gramática: '+k,g.filter(function(x){return x.cat===k;}).map(function(x){return {s:x.start,e:x.end};}),'Ver todas')+' ';}).join('<br>')+'</p>';
+    h+='<div class="tbl-w"><table class="tbl"><thead><tr><th>Linha</th><th>Categoria</th><th>Trecho</th><th>Correção sugerida</th><th>Observação</th><th>Confiança</th><th>Onde</th></tr></thead><tbody>';
+    g.slice(0,400).forEach(function(x){h+='<tr><td>'+x.linha+'</td><td>'+esc(x.cat)+'</td><td>«'+esc(oneLine(x.trecho,80))+'»</td><td>'+(x.sug!==null?'«'+esc(oneLine(x.sug.trim(),80))+'»'+(x.auto?' <span class="tag ex">automática</span>':''):'—')+'</td><td>'+esc(x.msg)+'</td><td>'+esc(x.conf)+'</td><td>'+ref(x.cat+' (linha '+x.linha+')',[{s:x.start,e:x.end}],'Ver')+'</td></tr>';});
     h+='</tbody></table></div>'+(g.length>400?'<p class="nota">Exibidas as 400 primeiras ocorrências. O relatório salvo traz a lista completa.</p>':'');
     el.innerHTML=h;
   }
+  function cobVer(r){
+    var c=r.comp, sp=[];
+    if(/^Cabeçalhos, rodapés/.test(c)) sp=secSpans(/^— (?:Cabeçalhos?|Rodapés?|Notas de (?:rodapé|fim))/);
+    else if(/^Comentários, revisões/.test(c)) sp=secSpans(/^— Comentários/);
+    else if(/^Anotações, comentários/.test(c)) sp=secSpans(/^— Anotação/);
+    else if(/^Caixas de texto/.test(c)) sp=secSpans(/^— (?:Texto alternativo|Códigos de campo)/);
+    else if(/^Hiperlinks/.test(c)) sp=secSpans(/^— Destinos/).concat(spansRx(/https?:\/\/[^\s)>\]]+/i,100));
+    else if(/^Metadados/.test(c)) sp=secSpans(/^— Metadados/);
+    else if(/^Texto das páginas/.test(c)) sp=secSpans(/^— Página \d+ —$/).slice(0,40);
+    else if(/^Texto oculto/.test(c)) sp=spansRx(INVIS,200);
+    return sp.length?ref('Cobertura: '+c,sp):'';
+  }
   function renderPaineis(){
-    renderAut(); renderGram();
+    REFS=[]; renderAut(); renderGram();
     var h='<div class="tbl-w"><table class="tbl"><thead><tr><th>Componente</th><th>Situação</th><th>Observação</th></tr></thead><tbody>';
-    S.cob.forEach(function(r){h+='<tr><td>'+esc(r.comp)+'</td><td><span class="tag '+r.st+'">'+ST_COB[r.st]+'</span></td><td>'+esc(r.obs)+'</td></tr>';});
+    S.cob.forEach(function(r){h+='<tr><td>'+esc(r.comp)+'</td><td><span class="tag '+r.st+'">'+ST_COB[r.st]+'</span></td><td>'+esc(r.obs)+(cobVer(r)?'<br>'+cobVer(r):'')+'</td></tr>';});
     h+='</tbody></table></div>';
     var lim=S.cob.filter(function(r){return r.st==='na'||r.st==='parc';}).length;
     $('#c-cob').innerHTML=(S.cobInc?'<p class="nota nota-bad">Auditoria inconclusiva quanto ao material não lido (imagens, objetos incorporados ou macros). A falta de texto extraído não prova que o arquivo está livre de instruções.</p>':'<p class="nota">Cada camada recebe uma situação. O que o programa não leu não foi tratado como examinado.</p>')+h;
@@ -2114,7 +2224,7 @@ var Core=(function(){
       var c='<p class="nota">O imperativo judicial não é prompt injection. O programa compara cada comando com as fontes por vocabulário e valores. A validade e o mérito exigem exame jurídico. Marque “Conferido” depois de revisar.</p><div class="tbl-w"><table class="tbl tbl-cmd"><thead><tr><th>Comando</th><th>Emissor e destinatário</th><th>Origem e fonte localizada</th><th>Suporte</th><th>Exame jurídico adicional</th><th>Conferido</th></tr></thead><tbody>';
       S.cmds.forEach(function(m,i){
         var cl=(m.suporte==='loc'||m.suporte==='brf')?'ex':m.suporte==='div'?'na':'parc';
-        c+='<tr><td><span class="trecho">«'+esc(oneLine(m.texto,200))+'»</span><br><span class="dica">linha '+(S.text.slice(0,m.pos).split('\n').length)+(m.disp?' · dispositivo':' · fora do dispositivo')+'</span></td>'+
+        c+='<tr><td><span class="trecho">«'+esc(oneLine(m.texto,200))+'»</span><br><span class="dica">linha '+(S.text.slice(0,m.pos).split('\n').length)+(m.disp?' · dispositivo':' · fora do dispositivo')+'</span><br>'+ref('Comando da minuta',spanLinha(m.pos,Math.max(20,(m.texto||'').length)))+'</td>'+
           '<td>'+esc(m.emissor)+'<br><span class="dica">Dirige-se a: '+esc(m.destinatario)+'</span></td>'+
           '<td>'+esc(m.origem)+(m.fonte?'<br><span class="dica">'+esc(m.fonte)+'</span>':'')+'</td>'+
           '<td><span class="tag '+cl+'">'+SUP[m.suporte]+'</span>'+(m.contradicao?'<br>'+esc(m.contradicao):'')+(m.obs?'<br><span class="dica">'+esc(m.obs)+'</span>':'')+'</td>'+
@@ -2131,7 +2241,7 @@ var Core=(function(){
     }else{
       var l='<p class="nota">Impossibilidade de conferir não é falsidade, e documento ausente do conjunto recebido não é documento ausente dos autos.</p><div class="tbl-w"><table class="tbl"><thead><tr><th>Tipo</th><th>Descrição</th><th>Conferido</th></tr></thead><tbody>';
       S.lac.forEach(function(x,i){
-        l+='<tr><td><span class="tag '+(x.tipo==='div'?'na':'parc')+'">'+esc(Core.LAC_TIPO[x.tipo])+'</span></td><td>'+esc(x.desc)+'</td><td><label class="ack-l"><input type="checkbox" class="ack" data-k="lac" data-i="'+i+'"'+(S.lacOk[i]?' checked':'')+'> Conferido</label></td></tr>';
+        l+='<tr><td><span class="tag '+(x.tipo==='div'?'na':'parc')+'">'+esc(Core.LAC_TIPO[x.tipo])+'</span></td><td>'+esc(x.desc)+(x.pos!=null?'<br>'+ref('Lacuna ou divergência',spanLinha(x.pos,80)):'')+'</td><td><label class="ack-l"><input type="checkbox" class="ack" data-k="lac" data-i="'+i+'"'+(S.lacOk[i]?' checked':'')+'> Conferido</label></td></tr>';
       });
       $('#c-lac').innerHTML=l+'</tbody></table></div>';
     }
@@ -2146,7 +2256,7 @@ var Core=(function(){
     Core.audit(S.items,S.fontes);
     S.prompt=$('#prompt-orig').value; S.fin=$('#finalidade').value.trim();
     S.instr=Core.instrucoes(S.items,S.text,S.prompt); S.cmds=Core.comandos(S.text,S.fontes,S.prompt); S.lac=Core.lacunas(S.text,S.fontes,S.items); S.cmdOk={}; S.lacOk={};
-    S.cob=cobertura(); S.aut=Core.autoria(S.text,S.items,S.instr); S.gram=Core.gramatica(S.text);
+    S.cob=cobertura(); S.aut=Core.autoria(S.text,S.items,S.instr); S.gram=Core.gramatica(S.text); S.evid=Core.evidencias(S.text,S.aut,S.items); S.foco=null;
     $('#resultado').hidden=false; $('#box-saida').hidden=true;
     buildTipo(); renderTexto(); renderLista(); renderPaineis(); syncFilterUI(); updateSummary(); applyFilter();
     navBadges(); irAba('resumo');
@@ -2162,6 +2272,92 @@ var Core=(function(){
     $('#tipo').innerHTML=h; $('#tipo').value='all';
   }
 
+
+  /* ---------- destaque no texto («ver no texto») ---------- */
+  var REFS=[];
+  function ref(label,spans,txt){
+    if(!spans||!spans.length) return '';
+    REFS.push({label:label,spans:spans});
+    return '<button type="button" class="ver" data-ver="'+(REFS.length-1)+'" title="Mostrar no texto da minuta">'+(txt||'Ver no texto')+(spans.length>1?' ('+spans.length+')':'')+'</button>';
+  }
+  function mapaDom(){
+    var t=S.text, dt=$('#texto').textContent, m=new Int32Array(t.length+1), i=0, j=0;
+    while(i<t.length){
+      m[i]=j;
+      if(j<dt.length&&t.charCodeAt(i)===dt.charCodeAt(j)){i++;j++;}
+      else if(t.charAt(i)==='\r'){i++;}
+      else {i++;j++;}
+    }
+    m[t.length]=j; return m;
+  }
+  function envolver(root,a,b,idx){
+    var w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT), n, pos=0, pc=[];
+    while((n=w.nextNode())){
+      var L=n.nodeValue.length;
+      if(pos+L>a&&pos<b) pc.push([n,Math.max(a-pos,0),Math.min(b-pos,L)]);
+      pos+=L; if(pos>=b) break;
+    }
+    for(var k=pc.length-1;k>=0;k--){
+      var p=pc[k]; if(p[2]<=p[1]) continue;
+      var r=document.createRange(); r.setStart(p[0],p[1]); r.setEnd(p[0],p[2]);
+      var mk=document.createElement('mark'); mk.className='foco'; mk.dataset.f=idx;
+      try{r.surroundContents(mk);}catch(e){}
+    }
+  }
+  function aplicarFoco(){
+    var f=S.foco, bar=$('#foco-bar'); if(!bar) return;
+    if(!f){ bar.hidden=true; return; }
+    var root=$('#texto'), mp=mapaDom(), T=S.text.length;
+    f.spans.forEach(function(s,idx){
+      var a=Math.max(0,Math.min(T,s.s)), b=Math.max(a,Math.min(T,s.e)); if(b<=a) b=Math.min(T,a+1);
+      envolver(root,mp[a],mp[b],idx);
+    });
+    bar.hidden=false;
+    focoIr(f.idx||0,true);
+  }
+  function focoIr(i,primeiro){
+    var f=S.foco; if(!f) return;
+    var n=f.spans.length; f.idx=((i%n)+n)%n;
+    document.querySelectorAll('#texto mark.foco.atual').forEach(function(e){e.classList.remove('atual');});
+    var ms=document.querySelectorAll('#texto mark.foco[data-f="'+f.idx+'"]');
+    ms.forEach(function(e){e.classList.add('atual');});
+    $('#fb-txt').innerHTML='<b>'+esc(f.label)+'</b> — ocorrência '+(f.idx+1)+' de '+n;
+    $('#fb-ant').hidden=$('#fb-prox').hidden=n<2;
+    if(ms[0]) ms[0].scrollIntoView({block:'center',behavior:reduce||primeiro?'auto':'smooth'});
+  }
+  function verNoTexto(label,spans,origem){
+    if(!spans||!spans.length) return;
+    var sc=$('#conteudo').scrollTop;
+    S.foco={label:label,spans:spans.slice().sort(function(a,b){return a.s-b.s;}),idx:0,origem:origem||abaAtual,rolagem:sc};
+    irAba('itens'); renderTexto();
+    var pn=$('#texto'); if(pn&&pn.scrollIntoView) pn.scrollIntoView({block:'start'});
+    var first=$('#texto mark.foco'); if(first) first.scrollIntoView({block:'center'});
+  }
+  function limparFoco(){S.foco=null; renderTexto();}
+  document.addEventListener('click',function(e){
+    var b=e.target.closest&&e.target.closest('button[data-ver]');
+    if(b){var r=REFS[+b.dataset.ver]; if(r) verNoTexto(r.label,r.spans,abaAtual); return;}
+    if(e.target.closest&&e.target.closest('#fb-prox')) focoIr((S.foco?S.foco.idx:0)+1);
+    else if(e.target.closest&&e.target.closest('#fb-ant')) focoIr((S.foco?S.foco.idx:0)-1);
+    else if(e.target.closest&&e.target.closest('#fb-lim')) limparFoco();
+    else if(e.target.closest&&e.target.closest('#fb-volta')){var o=S.foco&&S.foco.origem, r2=S.foco&&S.foco.rolagem; irAba(o&&o!=='itens'?o:'resumo'); if(r2) $('#conteudo').scrollTop=r2;}
+  });
+  function secSpans(re){
+    var out=[], t=S.text, rx=/^— .* —$/gm, ms=[], m;
+    while((m=rx.exec(t))!==null) ms.push({i:m.index,l:m[0]});
+    ms.forEach(function(x,k){ if(re.test(x.l)){ var e=k+1<ms.length?ms[k+1].i:t.length; out.push({s:x.i,e:Math.min(e,x.i+x.l.length+1500)}); } });
+    return out;
+  }
+  function spansRx(re,cap){
+    var r=new RegExp(re.source,'g'+(re.unicode?'u':'')+(re.ignoreCase?'i':'')), m, out=[];
+    while((m=r.exec(S.text))!==null){ if(!m[0].length){r.lastIndex++;continue;} out.push({s:m.index,e:m.index+m[0].length}); if(out.length>=(cap||300)) break; }
+    return out;
+  }
+  function spanLinha(pos,len){
+    var t=S.text, e=t.indexOf('\n',pos); if(e<0) e=t.length;
+    return [{s:pos,e:Math.min(e,pos+(len||160))}];
+  }
+
   function renderTexto(){
     var t=S.text, out='', pos=0, lastId=null;
     S.items.forEach(function(it){
@@ -2174,6 +2370,7 @@ var Core=(function(){
     });
     out+=vis(t.slice(pos));
     $('#texto').innerHTML=out;
+    aplicarFoco();
   }
 
   function audHTML(it){
@@ -2348,8 +2545,8 @@ var Core=(function(){
   }
   function xesc(s){return String(s).replace(/[&<>]/g,function(c){return c==='&'?'&amp;':c==='<'?'&lt;':'&gt;';});}
   function docxBuffer(linhas){
-    var body='';
-    linhas.forEach(function(l,i){
+    var body=typeof linhas==='string'?linhas:'';
+    if(typeof linhas!=='string') linhas.forEach(function(l,i){
       var h=i===0||/^(?:\d\. [A-ZÀ-Ý]{3}|INDICAÇÕES DE CORREÇÃO)/.test(l), b=h||/^Status:/.test(l), ind=/^   /.test(l)||/^- /.test(l);
       body+='<w:p><w:pPr>'+(h?'<w:keepNext/><w:spacing w:before="240" w:after="80"/>':'<w:spacing w:after="60"/>')+(ind&&!h?'<w:ind w:left="360"/>':'')+'</w:pPr><w:r>'+(b?'<w:rPr><w:b/></w:rPr>':'')+'<w:t xml:space="preserve">'+xesc(l.replace(/^ +/,''))+'</w:t></w:r></w:p>';
     });
@@ -2629,6 +2826,226 @@ var Core=(function(){
       if(G.length>300) L.push('… e mais '+(G.length-300)+' ocorrência(s).');
     }
     return L.join('\n');
+  }
+
+
+  /* ---------- relatório diagnóstico (estruturado: títulos, parágrafos, listas e tabelas) ---------- */
+  function diagModelo(){
+    var B=[], k=classificar(), c=counts(), bs=bloqueioSanit(), a=S.aut, G=S.gram||[];
+    var cit=S.items.filter(function(i){return i.kind==='cit';});
+    var cel=function(s){return String(s==null?'':s).replace(/\s+/g,' ').trim();};
+    var lin=function(pos){return pos>=0?String(S.text.slice(0,pos).split('\n').length):'—';};
+    var H=function(n,t){B.push({h:n,t:t});}, P=function(t){B.push({p:t});}, U=function(l){if(l.length) B.push({ul:l});}, T=function(cab,rows,w){B.push({tb:{cab:cab,lin:rows,w:w||null}});};
+    var graves=S.items.filter(function(i){return grav(i)!=='';});
+    var nCrit=graves.filter(function(i){return grav(i)==='critico';}).length;
+    B.push({h:0,t:'Relatório diagnóstico da minuta'});
+    P('Data: '+new Date().toLocaleDateString('pt-BR')+(S.params?'. Parâmetros: '+S.params+'.':'.'));
+
+    H(1,'1. Conclusão');
+    B.push({box:k.titulo+'. '+k.sub});
+    var nivel = (S.instr.length||c.crit||c.cmdBad||c.lacBad)?'ALTO':(S.cobInc||c.rel||c.pend||c.cmdPend||c.lacPend)?'MÉDIO':'BAIXO';
+    T(['Indicador','Resultado'],[
+      ['Situação geral',k.titulo],
+      ['Nível de atenção',nivel+(nivel==='ALTO'?' (há achado crítico, comando suspeito ou contradição)':nivel==='MÉDIO'?' (há pendência ou material não lido)':' (nenhum achado relevante; a validação humana continua necessária)')],
+      ['Segurança do arquivo',S.instr.length?S.instr.length+' comando(s) suspeito(s) ou resíduo(s) de IA':(S.cobInc?'nenhum comando localizado, mas a leitura foi incompleta':'nenhum comando suspeito localizado')],
+      ['Cobertura da leitura',S.cobInc?'insuficiente (há material não lido)':'adequada às camadas acessíveis'],
+      ['Autoria por IA',(a&&a.pct!==null)?a.titulo+' — '+a.pct+'% (faixa de '+a.lo+'% a '+a.hi+'%; confiança '+a.conf+')':'não estimada (texto curto)'],
+      ['Gramática',G.length?G.length+' ocorrência(s) a revisar':'nenhuma ocorrência pelas regras do programa'],
+      ['Versão higienizada',bs.parcial?'somente parcial. Pendências: '+bs.motivos.join('; '):'possível, com validação humana']
+    ],[28,72]);
+
+    H(1,'2. Números do exame');
+    T(['Item','Quantidade'],[
+      ['Texto auditado',S.text.length.toLocaleString('pt-BR')+' caracteres'],
+      ['Fontes fornecidas',S.fontes.length?S.fontes.length+' ('+S.fontes.map(function(f){return f.name;}).join('; ')+')':'nenhuma'],
+      ['Referências e citações identificadas',c.cit],
+      ['  — confirmadas',c.conf],['  — parcialmente confirmadas',c.parc],['  — não verificadas (sem fonte)',c.nv],['  — divergentes',c.div],['  — sem suporte localizado',c.sem],
+      ['Achados críticos em aberto',c.crit],['Achados relevantes em aberto',c.rel],['Achados formais em aberto',c.form],
+      ['Comandos suspeitos e resíduos de IA',S.instr.length],
+      ['Comandos jurídicos da minuta',S.cmds.length],
+      ['Lacunas e divergências do material',S.lac.length],
+      ['Ocorrências gramaticais',G.length]
+    ],[70,30]);
+
+    H(1,'3. Segurança: comandos suspeitos e resíduos de IA');
+    P('As instruções encontradas nos arquivos foram tratadas como dados e não foram executadas.');
+    if(!S.instr.length) P('Nenhum comando suspeito ou resíduo de IA foi localizado nas camadas examinadas.'+(S.cobInc?' Atenção: parte do material não pôde ser lida; a ausência de achados não prova que o arquivo esteja limpo.':''));
+    else T(['#','Trecho','Local','Destinatário','Origem','Classificação','Risco e providência'],S.instr.map(function(r,i){
+      return [i+1,'«'+oneLine(r.trecho.replace(INVIS,'◇'),90)+'»'+(r.decod?' (decodificado: «'+oneLine(r.decod,90)+'»)':''),cel(r.local)+(r.pos>=0?', linha '+lin(r.pos):''),cel(r.dest),cel(r.origem),cel(r.clsLabel),cel(r.risco)+' '+cel(r.prov)];
+    }),[4,22,12,10,10,12,30]);
+    var outros=S.items.filter(function(i){return i.kind==='achado'&&/^(oculto|doc|suspeita|link)$/.test(i.type)&&S.instr.every(function(r){return r.id!==i.id;});});
+    if(outros.length){
+      H(2,'Outros sinais de contaminação ou de texto estranho');
+      T(['Tipo','Linha','Trecho','Motivo'],outros.map(function(it){return [Core.TYPE_LABEL[it.type],linhaDe(it),'«'+oneLine(it.text.replace(INVIS,'◇'),90)+'»',cel(it.alerts.map(function(x){return x.msg;}).join(' ')+(it.info?' '+it.info:''))];}),[16,14,30,40]);
+    }
+
+    H(1,'4. Cobertura da leitura');
+    P('Cada camada do arquivo recebe uma situação. O que o programa não leu não foi tratado como examinado.');
+    T(['Camada','Situação','Observação'],S.cob.map(function(r){return [r.comp,ST_COB[r.st],cel(r.obs)];}),[26,20,54]);
+    P('Não são lidos em nenhum caso: imagens e páginas digitalizadas (sem reconhecimento de texto), páginas da web e fontes externas. Nenhum link foi aberto.');
+
+    H(1,'5. Citações e afirmações');
+    if(!cit.length) P('Nenhuma referência identificada.');
+    else{
+      T(['Resultado','Quantidade'],[['Confirmadas',c.conf],['Parcialmente confirmadas',c.parc],['Não verificadas (sem fonte)',c.nv],['Divergentes',c.div],['Sem suporte localizado',c.sem]],[70,30]);
+      var cs=cit.slice().sort(function(x,y){var o={div:0,sem:1,parc:2,nv:3,conf:4};var ax=(x.audit||{res:'nv'}).res,ay=(y.audit||{res:'nv'}).res;return (o[ax]-o[ay])||((x.start<0?1e12:x.start)-(y.start<0?1e12:y.start));});
+      T(['#','Referência','Linha','Resultado','Fonte e observação'],cs.slice(0,250).map(function(it,i){
+        var au=it.audit||{res:'nv',where:'',obs:'Fonte não fornecida.'};
+        return [i+1,oneLine(it.text,90),linhaDe(it).replace('linha ',''),AUD[au.res],cel((au.where?au.where+'. ':'')+au.obs+(it.alerts.length?' ['+it.alerts.map(function(x){return x.msg;}).join('; ')+']':''))];
+      }),[4,28,8,14,46]);
+      if(cs.length>250) P('… e mais '+(cs.length-250)+' referência(s) omitida(s) deste quadro.');
+    }
+
+    H(1,'6. Achados por gravidade');
+    if(!graves.length) P('Nenhum achado por gravidade.');
+    else{
+      graves.sort(function(x,y){return Core.ORD[grav(y)]-Core.ORD[grav(x)]||(x.start<0?1e12:x.start)-(y.start<0?1e12:y.start);});
+      T(['#','Gravidade','Tipo','Linha','Trecho','Motivo','Providência'],graves.slice(0,250).map(function(it,i){
+        return [i+1,GL[grav(it)],Core.TYPE_LABEL[it.type],linhaDe(it).replace('linha ',''),it.text?'«'+oneLine(it.text.replace(INVIS,'◇'),80)+'»':'—',cel(it.alerts.map(function(x){return x.msg;}).join(' ')+(it.info?' '+it.info:'')),providencia(it)];
+      }),[4,10,12,7,20,27,20]);
+    }
+
+    H(1,'7. Comandos jurídicos e operacionais da minuta');
+    if(!S.cmds.length) P('Nenhuma ordem ou determinação foi reconhecida no corpo da minuta.');
+    else{
+      P('O imperativo judicial não é tratado como prompt injection. Validade e mérito exigem exame jurídico.');
+      T(['#','Comando','Linha','Quem cumpre','Origem','Suporte','Exame jurídico'],S.cmds.map(function(m,i){
+        return [i+1,'«'+oneLine(m.texto,120)+'»'+(m.disp?' (dispositivo)':''),lin(m.pos),cel(m.destinatario),cel(m.origem+(m.fonte?' | '+m.fonte:'')),SUP[m.suporte]+(m.contradicao?'. '+cel(m.contradicao):''),cel(m.exame)];
+      }),[4,26,6,12,14,14,24]);
+    }
+
+    H(1,'8. Lacunas e divergências do material');
+    if(!S.lac.length) P('Nenhuma lacuna ou divergência reconhecida.');
+    else T(['#','Tipo','Descrição'],S.lac.map(function(x,i){return [i+1,Core.LAC_TIPO[x.tipo],cel(x.desc)];}),[4,20,76]);
+    P('Impossibilidade de conferir não é falsidade. Documento ausente do conjunto recebido não é documento ausente dos autos.');
+
+    H(1,'9. Possível autoria por inteligência artificial');
+    if(!a||a.pct===null) P(a?a.conclusao:'Sem texto.');
+    else{
+      T(['Medida','Resultado'],[['Conclusão',a.titulo],['Probabilidade estimada',a.pct+'% (faixa de '+a.lo+'% a '+a.hi+'%)'],['Confiança',a.conf],['Corpo analisado',a.N+' palavras'],['Cenário mais compatível',cel(a.cenario)]],[30,70]);
+      P(a.conclusao);
+      var li=function(i,sg){return [i.nome,cel(i.medido),(sg>0?'+':'')+i.efAj.toFixed(2),cel(i.leitura)];};
+      H(2,'Indícios a favor da redação por IA');
+      if(!a.pro.length) P('Nenhum.'); else T(['Indicador','Medido','Peso','Leitura'],a.pro.map(function(i){return li(i,1);}),[24,18,8,50]);
+      H(2,'Indícios em sentido contrário (redação humana)');
+      if(!a.con.length) P('Nenhum.'); else T(['Indicador','Medido','Peso','Leitura'],a.con.map(function(i){return li(i,-1);}),[24,18,8,50]);
+      if(a.mapa&&a.mapa.length){
+        H(2,'Parágrafos de maior índice local (0 a 100)');
+        T(['Parágrafo','Início','Índice'],a.mapa.slice().sort(function(x,y){return y.score-x.score;}).slice(0,8).map(function(m){return [m.n,'«'+oneLine(m.ini,70)+'…»',m.score];}),[12,70,18]);
+      }
+      P('A estimativa é probabilística, não prova autoria e não pode fundamentar, por si só, qualquer consequência. Textos jurídicos formais podem pontuar alto por seu estilo próprio.');
+    }
+
+    H(1,'10. Revisão gramatical e textual');
+    if(!G.length) P('Nenhuma ocorrência localizada pelas regras do programa. Isso não substitui a revisão humana.');
+    else{
+      var cc={}, au2={}; G.forEach(function(x){cc[x.cat]=(cc[x.cat]||0)+1; if(x.auto) au2[x.cat]=(au2[x.cat]||0)+1;});
+      T(['Categoria','Ocorrências','Correção segura'],Object.keys(cc).sort(function(x,y){return cc[y]-cc[x];}).map(function(k2){return [k2,cc[k2],au2[k2]||0];}),[60,20,20]);
+      T(['#','Linha','Categoria','Trecho','Sugestão','Observação'],G.slice(0,150).map(function(x,i){
+        return [i+1,x.linha,x.cat,'«'+oneLine(x.trecho,70)+'»',x.sug!==null?'«'+oneLine(x.sug.trim(),70)+'»':'—',cel(x.msg)+(x.auto?' (correção segura)':'')];
+      }),[4,6,14,24,22,30]);
+      if(G.length>150) P('… e mais '+(G.length-150)+' ocorrência(s). Use o botão "Texto corrigido" ou a aba Gramática.');
+    }
+
+    H(1,'11. Providências, por prioridade');
+    var f=[];
+    if(S.instr.length) f.push(['1','Alta','Remover do arquivo original os '+S.instr.length+' comando(s) suspeito(s) ou resíduo(s) de IA e revisar o resultado.']);
+    if(c.crit) f.push(['2','Alta','Resolver '+c.crit+' item(ns) crítico(s) em aberto.']);
+    if(c.div+c.sem) f.push(['3','Alta','Corrigir ou retirar '+(c.div+c.sem)+' referência(s) divergente(s) ou sem suporte.']);
+    if(c.cmdBad) f.push(['4','Alta','Corrigir '+c.cmdBad+' comando(s) da minuta em contradição com a fonte.']);
+    if(c.lacBad) f.push(['5','Alta','Resolver '+c.lacBad+' divergência(s) interna(s) de resultado.']);
+    S.cob.forEach(function(r){if(r.st==='na'&&r.crit) f.push(['6','Média','Examinar manualmente: '+r.comp+' ('+r.obs.split('.')[0]+').']);});
+    if(c.rel) f.push(['7','Média','Revisar '+c.rel+' item(ns) relevante(s) em aberto.']);
+    if(c.pend) f.push(['8','Média','Conferir na fonte oficial '+c.pend+' referência(s) sem confirmação integral.']);
+    if(c.cmdPend) f.push(['9','Média','Validar juridicamente '+c.cmdPend+' comando(s) sem suporte confirmado.']);
+    if(c.lacPend) f.push(['10','Média','Resolver ou justificar '+c.lacPend+' lacuna(s) ou omissão(ões).']);
+    if(G.length) f.push(['11','Baixa','Revisar '+G.length+' ocorrência(s) gramatical(is).']);
+    if(c.form) f.push(['12','Baixa','Ajustar '+c.form+' item(ns) formal(is).']);
+    if(!S.fontes.length) f.push(['13','Baixa','Fornecer as fontes (autos, decisões, legislação) para comparação.']);
+    f.push(['14','Obrigatória','Validar o conteúdo decisório. A responsabilidade é do magistrado.']);
+    f.forEach(function(r,i){r[0]=i+1;});
+    T(['#','Prioridade','Providência'],f,[5,15,80]);
+
+    H(1,'12. Limites deste relatório');
+    U(['O programa aponta indícios e inconsistências. Não afirma que o texto esteja correto, limpo ou seguro.',
+       'A conferência com a base de normas é de existência e limites do artigo. Não compara o conteúdo atribuído a ele.',
+       'Nenhuma fonte externa foi consultada. Nenhum link foi aberto.',
+       'A estimativa de autoria por IA é probabilística e não constitui prova.']);
+    return B;
+  }
+  function diagTexto(B,md){
+    var L=[], cel=function(v){return String(v==null?'':v).replace(/\|/g,md?'\\|':'/').replace(/\n/g,' ');};
+    B.forEach(function(b){
+      if(b.h===0){L.push(md?'# '+b.t:b.t.toUpperCase(),'');}
+      else if(b.h===1){L.push('',md?'## '+b.t:b.t.toUpperCase(),'');}
+      else if(b.h===2){L.push('',md?'### '+b.t:b.t,'');}
+      else if(b.p!==undefined){L.push(b.p,'');}
+      else if(b.box!==undefined){L.push(md?'> '+b.box:b.box,'');}
+      else if(b.ul){b.ul.forEach(function(x){L.push('- '+x);}); L.push('');}
+      else if(b.tb){
+        var t=b.tb;
+        if(md){L.push('| '+t.cab.map(cel).join(' | ')+' |','|'+t.cab.map(function(){return '---';}).join('|')+'|'); t.lin.forEach(function(r){L.push('| '+r.map(cel).join(' | ')+' |');});}
+        else{L.push(t.cab.join(' | ')); t.lin.forEach(function(r){L.push(r.map(cel).join(' | '));});}
+        L.push('');
+      }
+    });
+    return L.join('\n').replace(/\n{3,}/g,'\n\n').trim();
+  }
+  function diagHtml(B){
+    var h='<div class="diag">';
+    B.forEach(function(b){
+      if(b.h===0) h+='<h2>'+esc(b.t)+'</h2>';
+      else if(b.h===1) h+='<h3>'+esc(b.t)+'</h3>';
+      else if(b.h===2) h+='<h4>'+esc(b.t)+'</h4>';
+      else if(b.p!==undefined) h+='<p>'+esc(b.p)+'</p>';
+      else if(b.box!==undefined) h+='<p class="nota">'+esc(b.box)+'</p>';
+      else if(b.ul) h+='<ul>'+b.ul.map(function(x){return '<li>'+esc(x)+'</li>';}).join('')+'</ul>';
+      else if(b.tb){
+        var t=b.tb;
+        h+='<div class="tw"><table><thead><tr>'+t.cab.map(function(x){return '<th>'+esc(x)+'</th>';}).join('')+'</tr></thead><tbody>'+
+          t.lin.map(function(r){return '<tr>'+r.map(function(x){return '<td>'+esc(String(x==null?'':x))+'</td>';}).join('')+'</tr>';}).join('')+'</tbody></table></div>';
+      }
+    });
+    return h+'</div>';
+  }
+  function diagDocx(B){
+    var run=function(t,b,sz,col){return '<w:r><w:rPr>'+(b?'<w:b/>':'')+(col?'<w:color w:val="'+col+'"/>':'')+(sz?'<w:sz w:val="'+sz+'"/>':'')+'</w:rPr><w:t xml:space="preserve">'+xesc(t)+'</w:t></w:r>';};
+    var para=function(t,o){o=o||{};return '<w:p><w:pPr>'+(o.keep?'<w:keepNext/>':'')+'<w:spacing w:before="'+(o.bef||0)+'" w:after="'+(o.aft==null?80:o.aft)+'"/>'+(o.ind?'<w:ind w:left="'+o.ind+'"/>':'')+(o.shd?'<w:shd w:val="clear" w:color="auto" w:fill="'+o.shd+'"/>':'')+'</w:pPr>'+run(t,o.b,o.sz,o.col)+'</w:p>';};
+    var body='';
+    B.forEach(function(b){
+      if(b.h===0) body+=para(b.t,{b:1,sz:32,aft:160,keep:1});
+      else if(b.h===1) body+=para(b.t,{b:1,sz:26,bef:280,aft:100,keep:1,col:'1F3864'});
+      else if(b.h===2) body+=para(b.t,{b:1,sz:23,bef:160,aft:80,keep:1});
+      else if(b.p!==undefined) body+=para(b.p,{});
+      else if(b.box!==undefined) body+=para(b.box,{b:1,shd:'F2F2F2',aft:120});
+      else if(b.ul) b.ul.forEach(function(x){body+=para('• '+x,{ind:360,aft:40});});
+      else if(b.tb){
+        var t=b.tb, tot=9638, w=t.w||t.cab.map(function(){return 100/t.cab.length;}), sum=w.reduce(function(x,y){return x+y;},0);
+        var tw=w.map(function(x){return Math.round(tot*x/sum);});
+        var bd='<w:tcBorders>'+['top','left','bottom','right'].map(function(s){return '<w:'+s+' w:val="single" w:sz="4" w:space="0" w:color="BFBFBF"/>';}).join('')+'</w:tcBorders>';
+        var tc=function(txt,i,head){return '<w:tc><w:tcPr><w:tcW w:w="'+tw[i]+'" w:type="dxa"/>'+bd+(head?'<w:shd w:val="clear" w:color="auto" w:fill="D9E2F3"/>':'')+'<w:tcMar><w:top w:w="40" w:type="dxa"/><w:left w:w="70" w:type="dxa"/><w:bottom w:w="40" w:type="dxa"/><w:right w:w="70" w:type="dxa"/></w:tcMar></w:tcPr><w:p><w:pPr><w:spacing w:before="0" w:after="0"/></w:pPr>'+run(txt,head,18)+'</w:p></w:tc>';};
+        body+='<w:tbl><w:tblPr><w:tblW w:w="'+tot+'" w:type="dxa"/><w:tblLayout w:type="fixed"/></w:tblPr><w:tblGrid>'+tw.map(function(x){return '<w:gridCol w:w="'+x+'"/>';}).join('')+'</w:tblGrid>'+
+          '<w:tr><w:trPr><w:cantSplit/><w:tblHeader/></w:trPr>'+t.cab.map(function(x,i){return tc(x,i,true);}).join('')+'</w:tr>'+
+          t.lin.map(function(r){return '<w:tr><w:trPr><w:cantSplit/></w:trPr>'+r.map(function(x,i){return tc(String(x==null?'':x),i,false);}).join('')+'</w:tr>';}).join('')+'</w:tbl>'+para('',{aft:60});
+      }
+    });
+    return docxBuffer(body);
+  }
+  function abrirDiag(){
+    if(!S.text.trim()){aviso('Verifique uma minuta antes de gerar o diagnóstico.');return;}
+    var B=diagModelo(), txt=diagTexto(B,false);
+    S.diagB=B;
+    mostrar('Relatório diagnóstico','Leitura simples, com tabelas. Salve em .docx (tabelas reais), .txt ou .md pelos botões abaixo.',txt,
+      '<div class="saidas" role="group" aria-label="Salvar o relatório diagnóstico"><button type="button" class="btn primary" data-diag="docx">Salvar .docx</button><button type="button" class="btn" data-diag="txt">Salvar .txt</button><button type="button" class="btn" data-diag="md">Salvar .md</button></div>'+diagHtml(B));
+  }
+  function salvarDiag(fmt){
+    if(!S.text.trim()) return;
+    var B=diagModelo(), d=new Date(), nome='diagnostico-'+d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')+'.'+fmt, p;
+    if(fmt==='docx'){
+      if(typeof JSZip==='undefined'){aviso('A biblioteca de .docx não carregou. Salve como .txt ou .md.');return;}
+      p=diagDocx(B);
+    }else p=Promise.resolve(diagTexto(B,fmt==='md'));
+    p.then(function(data){return entregar(nome,data);}).then(function(){aviso('Arquivo "'+nome+'" enviado para salvar.');},function(e){aviso(e&&e.code==='declined'?'Salvamento cancelado.':'Não foi possível salvar o arquivo.');});
   }
 
   var PROMPT_BASE=[
@@ -3379,6 +3796,8 @@ var Core=(function(){
   $('#b-relatorio').addEventListener('click',function(){
     mostrar('Relatório de auditoria','Seções A a G. Copie e cole onde precisar.',relatorio());
   });
+  $('#b-diag').addEventListener('click',abrirDiag);
+  document.addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('[data-diag]'); if(b) salvarDiag(b.dataset.diag);});
   $('#b-sanit').addEventListener('click',function(){
     var r=Core.sanitize(S.text,S.items);
     var nv=novaVarredura(r.text);
